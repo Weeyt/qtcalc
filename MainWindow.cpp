@@ -45,7 +45,7 @@ QListWidget::item { padding:8px 6px; border-bottom:1px solid #2c2c2e; }
 QListWidget::item:selected { background:#2f4f7f; }
 )";
 
-} // namespace
+}
 
 MainWindow::MainWindow(QWidget* parent) : QWidget(parent) {
     setWindowTitle(QStringLiteral("Калькулятор"));
@@ -56,7 +56,6 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent) {
     refresh();
 }
 
-// ------------------------------------------------------------------ UI
 void MainWindow::buildUi() {
     setStyleSheet(QString::fromUtf8(kStyle));
 
@@ -68,7 +67,6 @@ void MainWindow::buildUi() {
     left->setSpacing(6);
     root->addLayout(left, 1);
 
-    // верхняя панель
     auto* top = new QHBoxLayout;
     top->addStretch(1);
     auto* histBtn = new QPushButton(QStringLiteral("🕘 История"));
@@ -78,7 +76,6 @@ void MainWindow::buildUi() {
     top->addWidget(histBtn);
     left->addLayout(top);
 
-    // дисплей (HUD)
     m_historyLine = new QLabel;
     m_historyLine->setObjectName("history");
     m_historyLine->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
@@ -98,7 +95,6 @@ void MainWindow::buildUi() {
     m_previewLabel->setMinimumHeight(32);
     left->addWidget(m_previewLabel);
 
-    // кнопки
     auto* grid = new QGridLayout;
     grid->setSpacing(6);
     left->addLayout(grid, 1);
@@ -117,7 +113,6 @@ void MainWindow::buildUi() {
 
     const QString sqrtSym(sym::Sqrt);
 
-    // --- научный блок (колонки 0..2)
     m_degBtn = add("Deg", "sci", 0, 0, 1, 1, [this] { toggleDeg(); });
     m_invBtn = add("Inv", "sci", 0, 1, 1, 1, [this] { toggleInv(); });
     m_modeBtn = add("Дроби", "sci", 0, 2, 1, 1, [this] { toggleMode(); });
@@ -140,7 +135,6 @@ void MainWindow::buildUi() {
 
     add(QStringLiteral("a⁄b"), "sci", 5, 0, 1, 3, [this] { insertPostfix(QString(sym::Frac)); });
 
-    // --- цифровой блок (колонки 3..6)
     add("AC", "clear", 0, 3, 1, 1, [this] { clearAll(); });
     add("⌫", "clear", 0, 4, 1, 1, [this] { backspace(); });
     add("(", "op", 0, 5, 1, 1, [this] { insertText("("); });
@@ -170,8 +164,7 @@ void MainWindow::buildUi() {
 
     for (int c = 0; c < 7; ++c) grid->setColumnStretch(c, 1);
     for (int r = 0; r < 6; ++r) grid->setRowStretch(r, 1);
-
-    // --- панель истории
+    
     m_histPanel = new QWidget;
     m_histPanel->setFixedWidth(240);
     auto* hv = new QVBoxLayout(m_histPanel);
@@ -204,7 +197,6 @@ void MainWindow::setActive(QPushButton* b, bool on) {
     b->style()->polish(b);
 }
 
-// ------------------------------------------------------------------ ввод
 void MainWindow::insertText(const QString& s) {
     if (m_justEvaluated) {
         m_expr.clear();
@@ -297,7 +289,6 @@ void MainWindow::equals() {
     }
 }
 
-// ------------------------------------------------------------------ отображение
 void MainWindow::refresh() {
     m_exprEdit->setText(m_expr);
     if (!m_justEvaluated) updatePreview();
@@ -312,7 +303,6 @@ void MainWindow::updatePreview() {
         if (f.main == m_expr && f.extra.isEmpty()) return;   // просто число - превью не нужно
         m_previewLabel->setText(f.main + (f.extra.isEmpty() ? QString() : QStringLiteral("     ") + f.extra));
     } catch (const CalcError&) {
-        // выражение ещё не закончено - молчим
     }
 }
 
@@ -343,7 +333,6 @@ void MainWindow::addHistory(const QString& expr, const QString& result) {
     m_histList->insertItem(0, item);
 }
 
-// ------------------------------------------------------------------ режимы
 void MainWindow::toggleDeg() {
     m_deg = !m_deg;
     m_degBtn->setText(m_deg ? "Deg" : "Rad");
@@ -373,7 +362,6 @@ void MainWindow::toggleHistory() {
     resize(width() + (show ? 252 : -252), height());
 }
 
-// ------------------------------------------------------------------ клавиатура
 void MainWindow::keyPressEvent(QKeyEvent* e) {
     switch (e->key()) {
     case Qt::Key_Return:
@@ -399,7 +387,7 @@ void MainWindow::keyPressEvent(QKeyEvent* e) {
     else if (c == '^')              insertPostfix("^");
     else if (c == '!')              insertPostfix("!");
     else if (c == '%')              insertPostfix("%");
-    else if (c == '\\')             insertPostfix(QString(sym::Frac));   // клавиша "\" = дробная черта
+    else if (c == '\\')             insertPostfix(QString(sym::Frac));
     else if (c == 'p' || c == 'P')  insertText(QString(sym::Pi));
     else if (c == 'e')              insertText("e");
     else QWidget::keyPressEvent(e);
