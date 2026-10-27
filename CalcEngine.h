@@ -22,7 +22,7 @@ inline const QChar Frac(0x2044);    // ⁄
 
 constexpr double kPi = 3.14159265358979323846;
 
-[[noreturn]] inline void fail(const QString& m = QStringLiteral("Ошибка")) { throw CalcError{m}; }
+[[noreturn]] inline void fail(const QString& m = QStringLiteral("Error")) { throw CalcError{m}; }
 
 struct Value {
     bool exact = true;   // true: n/d, false: x (double)
