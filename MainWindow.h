@@ -22,9 +22,9 @@ private:
     void buildUi();
 
     // ввод
-    void insertText(const QString& s);       // цифры, функции, константы (после "=" начинает заново)
-    void insertOperator(QChar op);           // + − × ÷ (после "=" продолжает с результата)
-    void insertPostfix(const QString& s);    // ^ ! % ⁄ ^2 (после "=" продолжает с результата)
+    void insertText(const QString& s);       // numbers, functions, constants (after "=" its looping)
+    void insertOperator(QChar op);           // + − × ÷
+    void insertPostfix(const QString& s);    // ^ ! % ⁄ ^2
     void reciprocal();
     void backspace();
     void clearAll();
