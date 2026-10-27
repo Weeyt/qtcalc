@@ -1,6 +1,4 @@
 #pragma once
-// Движок калькулятора: точная арифметика дробей (qint64) + рекурсивный парсер.
-// При переполнении или иррациональном результате автоматически переходит на double.
 
 #include <QString>
 #include <QtNumeric>
@@ -19,14 +17,13 @@ inline const QChar Times(0x00D7);   // ×
 inline const QChar Divide(0x00F7);  // ÷
 inline const QChar Sqrt(0x221A);    // √
 inline const QChar Pi(0x03C0);      // π
-inline const QChar Frac(0x2044);    // ⁄  (дробная черта: 1⁄2)
+inline const QChar Frac(0x2044);    // ⁄
 }
 
 constexpr double kPi = 3.14159265358979323846;
 
 [[noreturn]] inline void fail(const QString& m = QStringLiteral("Ошибка")) { throw CalcError{m}; }
 
-// ---------------------------------------------------------------- Value
 struct Value {
     bool exact = true;   // true: n/d, false: x (double)
     qint64 n = 0;
@@ -50,7 +47,7 @@ inline qint64 subI(qint64 a, qint64 b) { qint64 r; if (qSubOverflow(a, b, &r)) t
 inline qint64 mulI(qint64 a, qint64 b) { qint64 r; if (qMulOverflow(a, b, &r)) throw Overflow{}; return r; }
 
 inline Value make(qint64 n, qint64 d) {
-    if (d == 0) fail(QStringLiteral("Деление на ноль"));
+    if (d == 0) fail(QStringLiteral("Division by 0"));
     constexpr qint64 kMin = std::numeric_limits<qint64>::min();
     if (n == kMin || d == kMin) throw Overflow{};
     if (d < 0) { n = -n; d = -d; }
@@ -80,7 +77,6 @@ inline Value Value::fraction(qint64 n, qint64 d) {
     catch (const detail::Overflow&) { return real(double(n) / double(d)); }
 }
 
-// ---------------------------------------------------------------- арифметика
 inline Value add(const Value& a, const Value& b) {
     if (a.exact && b.exact) {
         try {
@@ -118,7 +114,6 @@ inline Value divide(const Value& a, const Value& b) {
     if (a.exact && b.exact) {
         try {
             using namespace detail;
-            // a/b = (a.n * b.d) / (a.d * b.n), знак нормализуется в make()
             const qint64 g1 = std::gcd(a.n, b.n);
             const qint64 g2 = std::gcd(a.d, b.d);
             return make(mulI(a.n / g1, b.d / g2), mulI(a.d / g2, b.n / g1));
@@ -151,7 +146,7 @@ inline bool isqrt(qint64 v, qint64& out) {
     if (v < 0) return false;
     const qint64 r = static_cast<qint64>(std::llround(std::sqrt(double(v))));
     for (qint64 c = (r > 0 ? r - 1 : 0); c <= r + 1; ++c) {
-        if (c > 3037000499LL) break;           // c*c не переполнится
+        if (c > 3037000499LL) break;
         if (c * c == v) { out = c; return true; }
     }
     return false;
@@ -200,14 +195,6 @@ inline Value applyFunction(const QString& f, const Value& a, bool deg) {
     fail();
 }
 
-// ---------------------------------------------------------------- парсер
-//  expr   := term (('+'|'−') term)*
-//  term   := unary (('×'|'÷'|неявное умножение) unary)*
-//  unary  := ('−'|'+') unary | power
-//  power  := postfix ('^' unary)?
-//  postfix:= frac ('!' | '%')*
-//  frac   := primary ('⁄' primary)*          <- дробная черта, связывает сильнее ×÷
-//  primary:= число | '(' expr ')' | π | e | √ frac | func '(' expr ')'
 class Parser {
 public:
     Parser(const QString& s, bool deg) : m_s(s), m_deg(deg) {}
@@ -247,7 +234,7 @@ private:
 
     void closeParen() {
         if (peek() == ')') ++m_i;
-        else if (m_i < m_s.size()) fail();   // конец строки допустим: скобки закрываются автоматически
+        else if (m_i < m_s.size()) fail();
     }
 
     Value expr() {
@@ -337,12 +324,12 @@ private:
         if (digits.size() <= 18) {
             qint64 pow10 = 1;
             for (int k = 0; k < fp.size(); ++k) pow10 *= 10;
-            v = Value::fraction(digits.toLongLong(), pow10);   // 0.1 -> 1/10 точно
+            v = Value::fraction(digits.toLongLong(), pow10);
         } else {
             v = Value::real((ip + QLatin1Char('.') + fp).toDouble());
         }
 
-        if (peek() == 'E') {                                    // 1.5E-3
+        if (peek() == 'E') {
             const int save = m_i;
             ++m_i;
             int sign = 1;
@@ -362,15 +349,14 @@ inline Value evaluate(const QString& expression, bool deg) {
     return p.parse();
 }
 
-// ---------------------------------------------------------------- форматирование
 struct Formatted {
-    QString main;   // основной результат
-    QString extra;  // дополнительная строка (десятичная запись / дробь / смешанное число)
-    QString cont;   // текст, с которого можно продолжать вычисления
+    QString main;   // MAIN result
+    QString extra;  // additional result
+    QString cont;
 };
 
 inline QString formatDecimal(double x) {
-    if (x == 0.0) x = 0.0;                       // убрать -0
+    if (x == 0.0) x = 0.0;
     QString s = QString::number(x, 'g', 12);
     s.replace(QStringLiteral("e+"), QStringLiteral("E"));
     s.replace(QStringLiteral("e-"), QStringLiteral("E-"));
@@ -411,4 +397,4 @@ inline Formatted format(const Value& v, bool fractionMode) {
     return f;
 }
 
-} // namespace calc
+}
